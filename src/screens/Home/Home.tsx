@@ -156,11 +156,6 @@ export const Home = () => {
         {},
       ),
     enabled: statusData?.status?.state === 'SUCCEEDED',
-    // onSuccess: () => {
-    //   setIsLoading(false);
-    //   setSchemaColumns(statusData.manifest?.schema?.columns || []);
-    //   setChunkCount(statusData.manifest?.total_chunk_count || 0);
-    // },
   });
 
   useEffect(() => {
@@ -180,7 +175,11 @@ export const Home = () => {
       filterable: false,
     })) || [];
 
-  const fetchNextChunk = useQuery({
+  const {
+    data: fetchNextChunkData,
+    isLoading: fetchNextChunkDataIsLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['chunk', chunkCurrent],
     queryFn: async () => {
       if (!nextChunkUrl) return null;
@@ -211,8 +210,8 @@ export const Home = () => {
   });
 
   useEffect(() => {
-    if (fetchNextChunk.data) {
-      const tempRows = fetchNextChunk.data.map(
+    if (fetchNextChunkData) {
+      const tempRows = fetchNextChunkData.map(
         (row: string[], index: number) => {
           const rowObject: { [key: string]: any } = {
             id: rows.length + index,
@@ -225,7 +224,7 @@ export const Home = () => {
       );
       setRows((prev) => [...prev, ...tempRows]);
     }
-  }, [fetchNextChunk]);
+  }, [fetchNextChunkData]);
 
   useEffect(() => {
     if (resultData) {
@@ -249,11 +248,10 @@ export const Home = () => {
     console.log('scroll end');
     console.log(nextChunkUrl, chunkCurrent, chunkCount);
     if (!nextChunkUrl || chunkCurrent >= chunkCount) return;
-    await fetchNextChunk.refetch();
+    await refetch();
     setChunkCurrent((prevChunk) => prevChunk + 1);
-  }, [nextChunkUrl, chunkCurrent, chunkCount, fetchNextChunk]);
+  }, [nextChunkUrl, chunkCurrent, chunkCount]);
 
-  console.log(statementData, statusData, resultData);
   return (
     <div
       style={{
@@ -270,7 +268,7 @@ export const Home = () => {
           statementIsLoading ||
           statusIsLoading ||
           resultIsLoading ||
-          fetchNextChunk.isLoading
+          fetchNextChunkDataIsLoading
         }
         disableColumnFilter
         slotProps={{
